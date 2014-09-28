@@ -4,7 +4,6 @@
 public class TestingThread implements Runnable{
 
     private final Lock lock;
-    int count;
     int id;
     int problemSize;
     int delayx;
@@ -33,29 +32,30 @@ public class TestingThread implements Runnable{
         }
     }
 
-    private int count()
+    private void count()
     {
-        int temp = 0;
+
         lock.lock();
+
         try {
-            temp = count;
-            count = temp + 1;
+
 
         } finally {
             int temp2 = lock.unlock();
-                if (!firstSuccess)
-                {
-                    delayx += temp2 - lastAcquiredCount;
 
+            if (!firstSuccess)
+                {
                     firstSuccess = true;
                 } else {
                     // subtract 1 cause we count ourselves obtaining
-                    delayx += (temp2 - lastAcquiredCount) -1;
+                    int temp3 = (temp2 - lastAcquiredCount) -1;
+                    if (temp3 > delayx) delayx = temp3;
                 }
                 lastAcquiredCount = temp2;
+//            System.out.println(lastAcquiredCount);
+//            System.out.println("delayx" + delayx);
+
         }
         delays[id] = delayx;
-
-        return temp;
     }
 }

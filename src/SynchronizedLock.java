@@ -1,4 +1,5 @@
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by jeffreyng on 2014-09-27.
@@ -7,11 +8,11 @@ public class SynchronizedLock implements Lock {
 
     AtomicBoolean locked;
     private Object lockObj = new Object();
-    int acquiredLock;
+    AtomicInteger acquiredCount;
     public SynchronizedLock()
     {
         locked = new AtomicBoolean(false);
-        acquiredLock = 0;
+        acquiredCount = new AtomicInteger(0);
     }
 
     public void lock()
@@ -26,11 +27,15 @@ public class SynchronizedLock implements Lock {
     {
         synchronized (lockObj)
         {
-            acquiredLock++;
+            int t = acquiredCount.getAndIncrement();
             locked.set(false);
-            return acquiredLock;
+            return t;
         }
 
+    }
+    public void resetDelay()
+    {
+        acquiredCount.getAndSet(0);
     }
 
 }

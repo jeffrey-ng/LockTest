@@ -7,4 +7,6 @@ public interface Lock {
     void lock();
 
     int unlock();
+
+    void resetDelay();
 }

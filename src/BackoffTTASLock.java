@@ -1,53 +1,72 @@
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by jeffreyng on 2014-09-27.
  */
 public class BackoffTTASLock implements Lock {
     protected AtomicBoolean locked;
-    int acquiredCount;
-    private final long initialSleepTime;
-    int attempts;
-    long MAXWAIT = 1000;
+    protected AtomicInteger acquiredCount;
+    private int limit;
+    Random r;
 
     public BackoffTTASLock()
     {
         locked = new AtomicBoolean(false);
-        acquiredCount = 0;
-        initialSleepTime = 2;
-        attempts = 0;
+        acquiredCount = new AtomicInteger(0);
+        r = new Random();
     }
 
     public void lock()
     {
-        boolean acquired = false;
-        long sleepTime = initialSleepTime;
-
-        while(!acquired)
+        BackOff b = new BackOff();
+        while (true)
         {
-            if(!locked.get())
+            while (locked.get()) {};
+            if (!locked.getAndSet(true))
             {
-                acquired=locked.compareAndSet(false, true);
+                return;
             } else {
-                attempts++;
                 try
-                 {
-                    Thread.sleep(sleepTime);
-                 } catch(InterruptedException e) {
-                    throw new IllegalStateException(e);
+                {
+                    b.backoff();
+                } catch(InterruptedException e) {
+                   e.printStackTrace();
                 }
-                sleepTime =(long) Math.min(MAXWAIT,Math.pow(sleepTime,attempts));
-               // System.out.println("Sleeptime: " +sleepTime +" Attempts: "+ attempts);
             }
         }
     }
 
     public int unlock()
     {
-        acquiredCount++;
+        int t = acquiredCount.getAndIncrement();
         locked.set(false);
-        return acquiredCount;
+        return t;
 
+    }
+    public void resetDelay()
+    {
+        acquiredCount.getAndSet(0);
+    }
+
+
+}
+
+class BackOff {
+    final int min, max;
+    int limit;
+    final Random random;
+
+    public BackOff() {
+        min = 1;
+        max = 100;
+        limit = min;
+        random = new Random();
+    }
+    public void backoff() throws InterruptedException {
+        int delay = random.nextInt(limit);
+        limit = Math.min(max, 2 * limit);
+        Thread.sleep(delay);
     }
 }

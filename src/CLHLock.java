@@ -1,4 +1,5 @@
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -9,7 +10,7 @@ public class CLHLock implements Lock {
     private final AtomicReference<Node> tail;
     private final ThreadLocal<Node> prev;
     private final ThreadLocal<Node> myNode;
-    int acquiredCount;
+    AtomicInteger acquiredCount;
 
 
     public CLHLock()
@@ -21,7 +22,7 @@ public class CLHLock implements Lock {
             }
         };
         prev = new ThreadLocal<Node>();
-        acquiredCount = 0;
+        acquiredCount = new AtomicInteger(0);
     }
 
     public void lock()
@@ -35,11 +36,16 @@ public class CLHLock implements Lock {
 
     public int unlock()
     {
-        acquiredCount++;
+        int t = acquiredCount.getAndIncrement();
         Node n = myNode.get();
         n.locked.set(false);
         myNode.set(prev.get());
-        return acquiredCount;
+        return t;
+    }
+
+    public void resetDelay()
+    {
+        acquiredCount.getAndSet(0);
     }
 
 

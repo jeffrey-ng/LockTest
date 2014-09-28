@@ -1,4 +1,5 @@
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by jeffreyng on 2014-09-21.
@@ -6,33 +7,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SimpleTTASLock implements Lock{
 
     protected AtomicBoolean locked;
-    int acquiredCount;
+    AtomicInteger acquiredCount;
 
     public SimpleTTASLock()
     {
         locked = new AtomicBoolean(false);
-        acquiredCount = 0;
+        acquiredCount = new AtomicInteger(0);
     }
 
     public void lock()
     {
-        boolean acquired = false;
-        while(!acquired)
-        {
-            if(!locked.get())
-            {
-                acquired=locked.compareAndSet(false, true);
-
-            }
+        while (true) {
+            while (locked.get()){};
+            if (!locked.getAndSet(true)) { return;}
         }
     }
 
-
     public int unlock()
     {
-        acquiredCount++;
+        int t = acquiredCount.getAndIncrement();
         locked.set(false);
-        return acquiredCount;
+        return t;
 
+    }
+
+    public void resetDelay()
+    {
+        acquiredCount.getAndSet(0);
     }
 }
